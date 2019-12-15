@@ -1,0 +1,15 @@
+{
+  "name": "scripts",
+  "author": "Malyshev Artem",
+  "private": true,
+  "devDependencies": {
+    "jscpd": "*",
+    "remark-cli": "*",
+    "remark-lint": "*",
+    "remark-preset-lint-recommended": "*"
+  },
+  "scripts": {
+    "lint:cp": "jscpd src/",
+    "lint:md": "remark --frail ."
+  }
+}
