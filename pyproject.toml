@@ -11,6 +11,10 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
+tokenize-rt = { version = "*", optional = true }
+
+[tool.poetry.extras]
+stories = ["tokenize-rt"]
 
 [build-system]
 requires = ["poetry"]
