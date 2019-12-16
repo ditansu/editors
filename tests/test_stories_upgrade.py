@@ -38,6 +38,7 @@ def test_migrate_ctx_assignment(returned_class):
                 I.one
 
             def one(self, ctx):
+                ctx.foo = 1
                 return {returned_class}()
         """
     ).format(returned_class=returned_class)
