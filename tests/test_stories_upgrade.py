@@ -44,3 +44,44 @@ def test_migrate_ctx_assignment(returned_class):
     ).format(returned_class=returned_class)
 
     assert _upgrade(before) == after
+
+
+@pytest.mark.parametrize("returned_class", ["Success", "Skip"])
+def test_migrate_ctx_multiple_assignment(returned_class):
+    """
+    Migrate Success(foo='bar', baz='quiz').
+
+    Migrate story context variable assignment from the Success()
+    keyword arguments to the multiline assignment expression.
+    """
+    before = dedent(
+        """
+        from stories import story, {returned_class}
+
+        class Action:
+            @story
+            def do(I):
+                I.one
+
+            def one(self, ctx):
+                return {returned_class}(foo=1, bar=2)
+        """
+    ).format(returned_class=returned_class)
+
+    after = dedent(
+        """
+        from stories import story, {returned_class}
+
+        class Action:
+            @story
+            def do(I):
+                I.one
+
+            def one(self, ctx):
+                ctx.foo = 1
+                ctx.bar = 2
+                return {returned_class}()
+        """
+    ).format(returned_class=returned_class)
+
+    assert _upgrade(before) == after
