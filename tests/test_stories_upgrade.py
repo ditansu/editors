@@ -108,8 +108,12 @@ def test_migrate_empty_ctx(returned_class):
     assert _upgrade(source) == source
 
 
+VALUES = ["1", "input()"]
+
+
 @pytest.mark.parametrize("returned_class", ["Success", "Skip"])
-def test_migrate_ctx_assignment(returned_class):
+@pytest.mark.parametrize("foo_value", VALUES)
+def test_migrate_ctx_assignment(returned_class, foo_value):
     """
     Migrate Success(foo='bar').
 
@@ -126,9 +130,9 @@ def test_migrate_ctx_assignment(returned_class):
                 I.one
 
             def one(self, ctx):
-                return {returned_class}(foo=1)
+                return {returned_class}(foo={foo_value})
         """
-    ).format(returned_class=returned_class)
+    ).format(returned_class=returned_class, foo_value=foo_value)
 
     after = dedent(
         """
@@ -140,16 +144,18 @@ def test_migrate_ctx_assignment(returned_class):
                 I.one
 
             def one(self, ctx):
-                ctx.foo = 1
+                ctx.foo = {foo_value}
                 return {returned_class}()
         """
-    ).format(returned_class=returned_class)
+    ).format(returned_class=returned_class, foo_value=foo_value)
 
     assert _upgrade(before) == after
 
 
 @pytest.mark.parametrize("returned_class", ["Success", "Skip"])
-def test_migrate_ctx_multiple_assignment(returned_class):
+@pytest.mark.parametrize("foo_value", VALUES)
+@pytest.mark.parametrize("bar_value", VALUES)
+def test_migrate_ctx_multiple_assignment(returned_class, foo_value, bar_value):
     """
     Migrate Success(foo='bar', baz='quiz').
 
@@ -166,9 +172,9 @@ def test_migrate_ctx_multiple_assignment(returned_class):
                 I.one
 
             def one(self, ctx):
-                return {returned_class}(foo=1, bar=2)
+                return {returned_class}(foo={foo_value}, bar={bar_value})
         """
-    ).format(returned_class=returned_class)
+    ).format(returned_class=returned_class, foo_value=foo_value, bar_value=bar_value)
 
     after = dedent(
         """
@@ -180,10 +186,10 @@ def test_migrate_ctx_multiple_assignment(returned_class):
                 I.one
 
             def one(self, ctx):
-                ctx.foo = 1
-                ctx.bar = 2
+                ctx.foo = {foo_value}
+                ctx.bar = {bar_value}
                 return {returned_class}()
         """
-    ).format(returned_class=returned_class)
+    ).format(returned_class=returned_class, foo_value=foo_value, bar_value=bar_value)
 
     assert _upgrade(before) == after
