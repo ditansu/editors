@@ -1,5 +1,7 @@
 """Upgrade classes with stories definitions to the new version of the library API."""
 import ast
+from dataclasses import dataclass
+from dataclasses import field
 from itertools import dropwhile
 from typing import cast
 from typing import List
@@ -50,10 +52,10 @@ def _ast_parse(source: str) -> ast.Module:
     return ast.parse(source)
 
 
+@dataclass
 class _FindAssignment(ast.NodeVisitor):
-    def __init__(self) -> None:
-        self.ctx_returned: Set[Offset] = set()
-        self.ctx_kwargs: Set[Offset] = set()
+    ctx_returned: Set[Offset] = field(default_factory=set)
+    ctx_kwargs: Set[Offset] = field(default_factory=set)
 
     def visit_Return(self, node: ast.Return) -> None:
         if self.is_success(node.value) or self.is_skip(node.value):
