@@ -89,7 +89,7 @@ def _mutate_found(tokens: List[Token], visitor: _FindAssignment) -> None:
             brace_end = _find_closing_brace(tokens, brace_start)
         elif token.offset in visitor.ctx_returned:
             return_start = i
-            if not return_start < brace_start < brace_end:
+            if not return_start < brace_start < brace_end:  # pragma: no cover
                 raise Exception
             inserted = _process_ctx_returned(
                 tokens, return_start, brace_start, brace_end

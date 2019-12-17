@@ -17,6 +17,34 @@ def test_main():
     assert result.output == ""
 
 
+def test_main_unchanged(tmpdir):
+    """Main entrypoint should exit silently in no files changed."""
+    source = dedent(
+        """
+        from stories import story, Success
+
+        class Action:
+            @story
+            def do(I):
+                I.one
+
+            def one(self, ctx):
+                return Success()
+        """
+    )
+
+    f = tmpdir.join("f.py")
+    f.write(source)
+
+    runner = CliRunner()
+
+    result = runner.invoke(main, [f.strpath])
+    assert result.exit_code == 0
+    assert result.output == ""
+
+    assert f.read() == source
+
+
 def test_main_changed(tmpdir):
     """Main entrypoint should change files."""
     before = dedent(
