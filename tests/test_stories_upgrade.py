@@ -2,8 +2,62 @@
 from textwrap import dedent
 
 import pytest
+from click.testing import CliRunner
 
 from stories_upgrade import _upgrade
+from stories_upgrade import main
+
+
+def test_main():
+    """Main entrypoint should return correct exit code."""
+    runner = CliRunner()
+
+    result = runner.invoke(main)
+    assert result.exit_code == 0
+    assert result.output == ""
+
+
+def test_main_changed(tmpdir):
+    """Main entrypoint should change files."""
+    before = dedent(
+        """
+        from stories import story, Success
+
+        class Action:
+            @story
+            def do(I):
+                I.one
+
+            def one(self, ctx):
+                return Success(foo=1)
+        """
+    )
+
+    after = dedent(
+        """
+        from stories import story, Success
+
+        class Action:
+            @story
+            def do(I):
+                I.one
+
+            def one(self, ctx):
+                ctx.foo = 1
+                return Success()
+        """
+    )
+
+    f = tmpdir.join("f.py")
+    f.write(before)
+
+    runner = CliRunner()
+
+    result = runner.invoke(main, [f.strpath])
+    assert result.exit_code == 1
+    assert result.output == f"Update {f.strpath}\n\n1 file updated\n"
+
+    assert f.read() == after
 
 
 @pytest.mark.parametrize("returned_class", ["Success", "Skip"])

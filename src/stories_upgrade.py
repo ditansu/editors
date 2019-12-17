@@ -4,14 +4,36 @@ from itertools import dropwhile
 from typing import List
 from typing import Optional
 from typing import Set
+from typing import TextIO
 from typing import Union
 
+import click
 from more_itertools import split_at
 from tokenize_rt import Offset
 from tokenize_rt import reversed_enumerate
 from tokenize_rt import src_to_tokens
 from tokenize_rt import Token
 from tokenize_rt import tokens_to_src
+
+
+@click.command()
+@click.argument("files", nargs=-1, type=click.File("r+"))
+@click.pass_context
+def main(ctx: click.Context, files: List[TextIO]) -> None:
+    """CLI entrypoint for stories upgrade tool."""
+    modified = 0
+    for f in files:
+        source = f.read()
+        output = _upgrade(source)
+        if source != output:
+            modified += 1
+            click.echo(f"Update {click.format_filename(f.name)}")
+            f.seek(0)
+            f.write(output)
+    if modified:
+        suffix = "s" if modified > 1 else ""
+        click.echo(f"\n{modified} file{suffix} updated")
+        ctx.exit(1)
 
 
 def _upgrade(source: str) -> str:

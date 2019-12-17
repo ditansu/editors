@@ -11,11 +11,15 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
+Click = { version = "*", optional = true }
 more-itertools = { version = "*", optional = true }
 tokenize-rt = { version = "*", optional = true }
 
 [tool.poetry.extras]
-stories = ["more-itertools", "tokenize-rt"]
+stories = ["Click", "more-itertools", "tokenize-rt"]
+
+[tool.poetry.scripts]
+stories-upgrade = "stories_upgrade:main"
 
 [build-system]
 requires = ["poetry"]
