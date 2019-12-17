@@ -1,6 +1,7 @@
 """Upgrade classes with stories definitions to the new version of the library API."""
 import ast
 from itertools import dropwhile
+from typing import cast
 from typing import List
 from typing import Optional
 from typing import Set
@@ -56,12 +57,10 @@ class _FindAssignment(ast.NodeVisitor):
 
     def visit_Return(self, node: ast.Return) -> None:
         if self.is_success(node.value) or self.is_skip(node.value):
-            self.ctx_returned.add(_ast_to_offset(node))
-        self.generic_visit(node)
-
-    def visit_Call(self, node: ast.Call) -> None:
-        if self.is_success(node) or self.is_skip(node):
-            self.ctx_kwargs.add(_ast_to_offset(node.func))
+            call = cast(ast.Call, node.value)
+            if call.keywords:
+                self.ctx_returned.add(_ast_to_offset(node))
+                self.ctx_kwargs.add(_ast_to_offset(call.func))
         self.generic_visit(node)
 
     def is_success(self, node: Optional[ast.expr]) -> bool:

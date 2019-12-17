@@ -61,6 +61,26 @@ def test_main_changed(tmpdir):
 
 
 @pytest.mark.parametrize("returned_class", ["Success", "Skip"])
+def test_migrate_empty_ctx(returned_class):
+    """Don't modify methods without variable assignment in any case."""
+    source = dedent(
+        """
+        from stories import story, {returned_class}
+
+        class Action:
+            @story
+            def do(I):
+                I.one
+
+            def one(self, ctx):
+                return {returned_class}()
+        """
+    ).format(returned_class=returned_class)
+
+    assert _upgrade(source) == source
+
+
+@pytest.mark.parametrize("returned_class", ["Success", "Skip"])
 def test_migrate_ctx_assignment(returned_class):
     """
     Migrate Success(foo='bar').
