@@ -88,7 +88,7 @@ def test_main_changed(tmpdir):
     assert f.read() == after
 
 
-@pytest.mark.parametrize("returned_class", ["Success", "Skip"])
+@pytest.mark.parametrize("returned_class", ["Success", "Skip", "Failure", "Result"])
 def test_migrate_empty_ctx(returned_class):
     """Don't modify methods without variable assignment in any case."""
     source = dedent(
