@@ -89,6 +89,7 @@ def _mutate_found(tokens: List[Token], visitor: _FindAssignment) -> None:
         if token.offset in visitor.ctx_kwargs:
             brace_start = i
             brace_end = _find_closing_brace(tokens, brace_start)
+            visitor.ctx_kwargs.remove(token.offset)
         elif token.offset in visitor.ctx_returned:
             return_start = i
             if not return_start < brace_start < brace_end:  # pragma: no cover
@@ -97,6 +98,7 @@ def _mutate_found(tokens: List[Token], visitor: _FindAssignment) -> None:
                 tokens, return_start, brace_start, brace_end
             )
             _process_ctx_kwargs(tokens, brace_start + inserted, brace_end + inserted)
+            visitor.ctx_returned.remove(token.offset)
 
 
 def _process_ctx_returned(
@@ -106,6 +108,7 @@ def _process_ctx_returned(
     offset = brace_start + 2
     limit = brace_end - 1
     kwargs = tokens[offset:limit]
+    indent = tokens[return_start].utf8_byte_offset
 
     for assignment in reversed(list(split_at(kwargs, lambda token: token.src == ","))):
         key, value = list(split_at(assignment, lambda token: token.src == "="))
@@ -120,7 +123,7 @@ def _process_ctx_returned(
             Token(name="UNIMPORTANT_WS", src=" "),
             *variable,
             Token(name="NEWLINE", src="\n"),
-            tokens[return_start - 1],  # indent
+            Token(name="INDENT", src=" " * indent),
         ]
         tokens[return_start:return_start] = patch
         inserted += len(patch)

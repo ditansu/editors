@@ -193,3 +193,48 @@ def test_migrate_ctx_multiple_assignment(returned_class, foo_value, bar_value):
     ).format(returned_class=returned_class, foo_value=foo_value, bar_value=bar_value)
 
     assert _upgrade(before) == after
+
+
+@pytest.mark.parametrize("returned_class", ["Success", "Skip"])
+@pytest.mark.parametrize("foo_value", VALUES)
+def test_migrate_ctx_assignment_with_indentation(returned_class, foo_value):
+    """
+    Migrate Success(foo='bar') after if False: pass.
+
+    This should not crash because of dedent right before return
+    statement.
+    """
+    before = dedent(
+        """
+        from stories import story, {returned_class}
+
+        class Action:
+            @story
+            def do(I):
+                I.one
+
+            def one(self, ctx):
+                if False:
+                    pass
+                return {returned_class}(foo={foo_value})
+        """
+    ).format(returned_class=returned_class, foo_value=foo_value)
+
+    after = dedent(
+        """
+        from stories import story, {returned_class}
+
+        class Action:
+            @story
+            def do(I):
+                I.one
+
+            def one(self, ctx):
+                if False:
+                    pass
+                ctx.foo = {foo_value}
+                return {returned_class}()
+        """
+    ).format(returned_class=returned_class, foo_value=foo_value)
+
+    assert _upgrade(before) == after
