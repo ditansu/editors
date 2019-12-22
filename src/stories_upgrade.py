@@ -110,7 +110,13 @@ def _process_ctx_returned(
     kwargs = tokens[offset:limit]
     indent = tokens[return_start].utf8_byte_offset
 
-    for assignment in reversed(list(split_at(kwargs, lambda token: token.src == ","))):
+    for i, assignment in enumerate(
+        reversed(list(split_at(kwargs, lambda token: token.src == ",")))
+    ):
+        if _is_first(i) and _all_whitespace(assignment):
+            # The last assignment in the keyword list could ',' before
+            # ')'.  We can ignore this tokens safely.
+            continue
         key, value = list(split_at(assignment, lambda token: token.src == "="))
         name = next(filter(lambda token: token.name == "NAME", key))
         variable = list(dropwhile(lambda token: token.src.isspace(), value))
@@ -152,3 +158,11 @@ def _find_closing_brace(tokens: List[Token], i: int) -> int:
 
 
 BRACES = {"(": ")", "[": "]", "{": "}"}
+
+
+def _is_first(i: int) -> bool:
+    return i == 0
+
+
+def _all_whitespace(tokens: List[Token]) -> bool:
+    return all(token.src.isspace() for token in tokens)
