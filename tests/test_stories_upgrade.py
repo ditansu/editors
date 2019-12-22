@@ -112,6 +112,7 @@ VALUES = [
     "1",
     "'test'",
     "input()",
+    "ctx.ham",
     "quiz is not None",
     "quiz | ctx.ham",
     "[\n        x for x in y\n    ]",
