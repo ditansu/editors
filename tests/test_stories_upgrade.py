@@ -108,7 +108,14 @@ def test_migrate_empty_ctx(returned_class):
     assert _upgrade(source) == source
 
 
-VALUES = ["1", "'test'", "input()", "quiz is not None", "quiz | ctx.ham"]
+VALUES = [
+    "1",
+    "'test'",
+    "input()",
+    "quiz is not None",
+    "quiz | ctx.ham",
+    "[\n        x for x in y\n    ]",
+]
 
 
 @pytest.mark.parametrize("returned_class", ["Success", "Skip"])
