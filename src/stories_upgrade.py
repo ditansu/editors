@@ -90,8 +90,8 @@ def _ast_to_offset(node: Union[ast.expr, ast.stmt]) -> Offset:
 def _mutate_found(tokens: List[Token], visitor: _FindAssignment) -> None:
     for i, token in reversed_enumerate(tokens):
         if token.offset in visitor.ctx_kwargs:
-            brace_start = i
-            brace_end = _find_closing_brace(tokens, brace_start)
+            brace_start = i + 1
+            brace_end = _find_closing_brace(tokens, brace_start, "(")
             visitor.ctx_kwargs.remove(token.offset)
         elif token.offset in visitor.ctx_returned:
             return_start = i
@@ -108,7 +108,7 @@ def _process_ctx_returned(
     tokens: List[Token], return_start: int, brace_start: int, brace_end: int
 ) -> int:
     inserted = 0
-    offset = brace_start + 2
+    offset = brace_start + 1
     limit = brace_end - 1
     kwargs = tokens[offset:limit]
     indent = tokens[return_start].utf8_byte_offset
@@ -137,24 +137,26 @@ def _process_ctx_returned(
 
 
 def _process_ctx_kwargs(tokens: List[Token], brace_start: int, brace_end: int) -> None:
-    offset = brace_start + 2
+    offset = brace_start + 1
     limit = brace_end - 1
     del tokens[offset:limit]
 
 
-def _find_closing_brace(tokens: List[Token], i: int) -> int:
-    i += 2
-    brace_stack = ["("]
+def _find_closing_brace(tokens: List[Token], i: int, opening: str) -> int:
+    if opening not in BRACES:
+        raise Exception  # pragma: no cover
+    j = i + 1
+    brace_stack = [opening]
 
     while brace_stack:
-        token = tokens[i].src
-        i += 1
+        token = tokens[j].src
+        j += 1
         if token == BRACES[brace_stack[-1]]:
             brace_stack.pop()
         elif token in BRACES:
             brace_stack.append(token)
 
-    return i
+    return j
 
 
 BRACES = {"(": ")", "[": "]", "{": "}"}
@@ -169,7 +171,7 @@ def _split_assign(kwargs: List[Token]) -> Iterable[List[Token]]:
         elif skip_until is not None:
             skip_until = None
         elif token.src in BRACES:
-            closing = _find_closing_brace(kwargs, i)
+            closing = _find_closing_brace(kwargs, i, token.src)
             chunk.extend(kwargs[i:closing])
             skip_until = closing
         elif token.src == ",":
