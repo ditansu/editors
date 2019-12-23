@@ -108,6 +108,9 @@ def test_migrate_empty_ctx(returned_class):
     assert _upgrade(source) == source
 
 
+TEMPLATES = ["{}", "self.method({})"]
+
+
 VALUES = [
     "1",
     "'test'",
@@ -116,11 +119,15 @@ VALUES = [
     "quiz is not None",
     "quiz | ctx.ham",
     "[\n        x for x in y\n    ]",
+    "[\n        *x,\n        y,\n    ]",
 ]
 
 
+ASSIGNMENTS = [template.format(value) for template in TEMPLATES for value in VALUES]
+
+
 @pytest.mark.parametrize("returned_class", ["Success", "Skip"])
-@pytest.mark.parametrize("foo_value", VALUES)
+@pytest.mark.parametrize("foo_value", ASSIGNMENTS)
 def test_migrate_ctx_assignment(returned_class, foo_value):
     """
     Migrate Success(foo='bar').
@@ -161,8 +168,8 @@ def test_migrate_ctx_assignment(returned_class, foo_value):
 
 
 @pytest.mark.parametrize("returned_class", ["Success", "Skip"])
-@pytest.mark.parametrize("foo_value", VALUES)
-@pytest.mark.parametrize("bar_value", VALUES)
+@pytest.mark.parametrize("foo_value", ASSIGNMENTS)
+@pytest.mark.parametrize("bar_value", ASSIGNMENTS)
 def test_migrate_ctx_multiple_assignment(returned_class, foo_value, bar_value):
     """
     Migrate Success(foo='bar', baz='quiz').
@@ -204,7 +211,7 @@ def test_migrate_ctx_multiple_assignment(returned_class, foo_value, bar_value):
 
 
 @pytest.mark.parametrize("returned_class", ["Success", "Skip"])
-@pytest.mark.parametrize("foo_value", VALUES)
+@pytest.mark.parametrize("foo_value", ASSIGNMENTS)
 def test_migrate_ctx_assignment_with_indentation(returned_class, foo_value):
     """
     Migrate Success(foo='bar') after if False: pass.
@@ -249,8 +256,8 @@ def test_migrate_ctx_assignment_with_indentation(returned_class, foo_value):
 
 
 @pytest.mark.parametrize("returned_class", ["Success", "Skip"])
-@pytest.mark.parametrize("foo_value", VALUES)
-@pytest.mark.parametrize("bar_value", VALUES)
+@pytest.mark.parametrize("foo_value", ASSIGNMENTS)
+@pytest.mark.parametrize("bar_value", ASSIGNMENTS)
 def test_migrate_ctx_assignment_multiline(returned_class, foo_value, bar_value):
     """Migrate Success(foo='bar', baz='quiz').
 

@@ -2,8 +2,8 @@
 import ast
 from dataclasses import dataclass
 from dataclasses import field
-from itertools import dropwhile
 from typing import cast
+from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Set
@@ -12,6 +12,7 @@ from typing import Union
 
 import click
 from more_itertools import split_at
+from more_itertools import strip
 from tokenize_rt import Offset
 from tokenize_rt import reversed_enumerate
 from tokenize_rt import src_to_tokens
@@ -110,16 +111,10 @@ def _process_ctx_returned(
     kwargs = tokens[offset:limit]
     indent = tokens[return_start].utf8_byte_offset
 
-    for i, assignment in enumerate(
-        reversed(list(split_at(kwargs, lambda token: token.src == ",")))
-    ):
-        if _is_first(i) and _all_whitespace(assignment):
-            # The last assignment in the keyword list could ',' before
-            # ')'.  We can ignore this tokens safely.
-            continue
+    for assignment in reversed(list(_split_assign(kwargs))):
         key, value = list(split_at(assignment, lambda token: token.src == "="))
         name = next(filter(lambda token: token.name == "NAME", key))
-        variable = list(dropwhile(lambda token: token.src.isspace(), value))
+        variable = list(strip(value, lambda token: token.src.isspace()))
         patch = [
             Token(name="NAME", src="ctx"),
             Token(name="OP", src="."),
@@ -160,8 +155,25 @@ def _find_closing_brace(tokens: List[Token], i: int) -> int:
 BRACES = {"(": ")", "[": "]", "{": "}"}
 
 
-def _is_first(i: int) -> bool:
-    return i == 0
+def _split_assign(kwargs: List[Token]) -> Iterable[List[Token]]:
+    chunk = []
+    skip_until: Optional[int] = None
+    for i, token in enumerate(kwargs):
+        if skip_until is not None and i < skip_until:
+            continue
+        elif skip_until is not None:
+            skip_until = None
+        elif token.src in BRACES:
+            closing = _find_closing_brace(kwargs, i)
+            chunk.extend(kwargs[i:closing])
+            skip_until = closing
+        elif token.src == ",":
+            yield chunk
+            chunk = []
+        else:
+            chunk.append(token)
+    if not _all_whitespace(chunk):
+        yield chunk
 
 
 def _all_whitespace(tokens: List[Token]) -> bool:
