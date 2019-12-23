@@ -23,7 +23,7 @@ from tokenize_rt import tokens_to_src
 
 
 @click.command()
-@click.argument("files", nargs=-1, type=click.File("r+"))
+@click.argument("files", nargs=-1, type=click.File("r"))
 @click.pass_context
 def main(ctx: click.Context, files: List[TextIO]) -> None:
     """CLI entrypoint for stories upgrade tool."""
@@ -34,8 +34,8 @@ def main(ctx: click.Context, files: List[TextIO]) -> None:
         if source != output:
             modified += 1
             click.echo(f"Update {click.format_filename(f.name)}")
-            f.seek(0)
-            f.write(output)
+            with open(f.name, "w") as f:
+                f.write(output)
     if modified:
         suffix = "s" if modified > 1 else ""
         click.echo(f"\n{modified} file{suffix} updated")
