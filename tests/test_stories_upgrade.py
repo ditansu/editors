@@ -108,7 +108,7 @@ def test_migrate_empty_ctx(returned_class):
     assert _upgrade(source) == source
 
 
-TEMPLATES = ["{}", "self.method({})"]
+TEMPLATES = ["{}", "self.method({})", "func(arg={})"]
 
 
 VALUES = [

@@ -2,6 +2,9 @@
 import ast
 from dataclasses import dataclass
 from dataclasses import field
+from itertools import dropwhile
+from itertools import islice
+from itertools import takewhile
 from typing import cast
 from typing import Iterable
 from typing import List
@@ -11,7 +14,6 @@ from typing import TextIO
 from typing import Union
 
 import click
-from more_itertools import split_at
 from more_itertools import strip
 from tokenize_rt import Offset
 from tokenize_rt import reversed_enumerate
@@ -112,13 +114,16 @@ def _process_ctx_returned(
     indent = tokens[return_start].utf8_byte_offset
 
     for assignment in reversed(list(_split_assign(kwargs))):
-        key, value = list(split_at(assignment, lambda token: token.src == "="))
-        name = next(filter(lambda token: token.name == "NAME", key))
-        variable = list(strip(value, lambda token: token.src.isspace()))
+        key = takewhile(lambda token: token.src != "=", assignment)
+        value = dropwhile(lambda token: token.src != "=", assignment)
+        name = list(strip(key, lambda token: token.src.isspace()))
+        variable = list(
+            strip(islice(value, 1, None), lambda token: token.src.isspace())
+        )
         patch = [
             Token(name="NAME", src="ctx"),
             Token(name="OP", src="."),
-            name,
+            *name,
             Token(name="UNIMPORTANT_WS", src=" "),
             Token(name="OP", src="="),
             Token(name="UNIMPORTANT_WS", src=" "),
@@ -159,7 +164,7 @@ def _split_assign(kwargs: List[Token]) -> Iterable[List[Token]]:
     chunk = []
     skip_until: Optional[int] = None
     for i, token in enumerate(kwargs):
-        if skip_until is not None and i < skip_until:
+        if skip_until is not None and i < skip_until - 1:
             continue
         elif skip_until is not None:
             skip_until = None
