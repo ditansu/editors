@@ -120,6 +120,7 @@ VALUES = [
     "quiz | ctx.ham",
     "[\n        x for x in y\n    ]",
     "[\n        *x,\n        y,\n    ]",
+    "{\n        x: y,\n        # ...\n        a: b,\n    }",
 ]
 
 
@@ -277,6 +278,55 @@ def test_migrate_ctx_assignment_multiline(returned_class, foo_value, bar_value):
             def one(self, ctx):
                 return {returned_class}(
                     foo={foo_value},
+                    bar={bar_value},
+                )
+        """
+    ).format(returned_class=returned_class, foo_value=foo_value, bar_value=bar_value)
+
+    after = dedent(
+        """
+        from stories import story, {returned_class}
+
+        class Action:
+            @story
+            def do(I):
+                I.one
+
+            def one(self, ctx):
+                ctx.foo = {foo_value}
+                ctx.bar = {bar_value}
+                return {returned_class}()
+        """
+    ).format(returned_class=returned_class, foo_value=foo_value, bar_value=bar_value)
+
+    assert _upgrade(before) == after
+
+
+@pytest.mark.parametrize("returned_class", ["Success", "Skip"])
+@pytest.mark.parametrize("foo_value", ASSIGNMENTS)
+@pytest.mark.parametrize("bar_value", ASSIGNMENTS)
+def test_migrate_ctx_assignment_multiline_with_comment(
+    returned_class, foo_value, bar_value
+):
+    """Migrate Success(foo='bar', baz='quiz').
+
+    Where 'foo' and 'bar' have place on the different sequential lines
+    and there is a comment line between them.
+
+    """
+    before = dedent(
+        """
+        from stories import story, {returned_class}
+
+        class Action:
+            @story
+            def do(I):
+                I.one
+
+            def one(self, ctx):
+                return {returned_class}(
+                    foo={foo_value},
+                    # ...
                     bar={bar_value},
                 )
         """

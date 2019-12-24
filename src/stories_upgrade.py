@@ -177,6 +177,8 @@ def _split_assign(kwargs: List[Token]) -> Iterable[List[Token]]:
         elif token.src == ",":
             yield chunk
             chunk = []
+        elif token.name == "COMMENT":
+            pass
         else:
             chunk.append(token)
     if not _all_whitespace(chunk):
