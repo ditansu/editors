@@ -3,7 +3,6 @@ import collections
 import configparser
 import datetime
 import json
-import os.path
 import re
 import subprocess
 import sys
@@ -221,15 +220,12 @@ def test_ini_files_indentation():
     for ini_file in [
         ".coveragerc",
         ".flake8",
-        ".importlinter",
-        ".vale.ini",
         "mypy.ini",
         "pytest.ini",
         "tox.ini",
     ]:
-        if os.path.exists(ini_file):
-            ini_text = open(ini_file).read()
-            assert not re.search(r"^   ", ini_text, re.MULTILINE)
+        ini_text = open(ini_file).read()
+        assert not re.search(r"^   ", ini_text, re.MULTILINE)
 
 
 def test_lock_files_not_committed():
