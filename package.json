@@ -1,6 +1,6 @@
 {
   "name": "scripts",
-  "author": "Malyshev Artem",
+  "author": "Artem Malyshev",
   "private": true,
   "devDependencies": {
     "jscpd": "*",

@@ -1,0 +1,58 @@
+---
+trigger:
+  - master
+jobs:
+  - job: "Test"
+    pool:
+      vmImage: "ubuntu-latest"
+    strategy:
+      matrix:
+        precommit:
+          python.version: "3.8"
+          tox.env: precommit
+        stories-upgrade:
+          python.version: "3.8"
+          tox.env: stories-upgrade
+        flake8:
+          python.version: "3.8"
+          tox.env: flake8
+        bandit:
+          python.version: "3.8"
+          tox.env: bandit
+        xenon:
+          python.version: "3.8"
+          tox.env: xenon
+        mypy:
+          python.version: "3.8"
+          tox.env: mypy
+        remarklint:
+          python.version: "3.8"
+          tox.env: remarklint
+        yamllint:
+          python.version: "3.8"
+          tox.env: yamllint
+        jscpd:
+          python.version: "3.8"
+          tox.env: jscpd
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: $(python.version)
+        displayName: Install Python.
+      - script: pip install --upgrade tox codecov
+        displayName: Install Tox.
+      - task: NodeTool@0
+        inputs:
+          versionSpec: "10.x"
+        condition: in(variables['tox.env'], 'remarklint', 'jscpd')
+        displayName: Install NodeJS.
+      - script: tox -e $(tox.env)
+        displayName: Run Tox.
+      - script: |
+          if [ -f .coverage ]
+          then
+            codecov
+          fi
+        env:
+          CODECOV_TOKEN: $(codecov.token)
+        displayName: Report Coverage.

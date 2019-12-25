@@ -1,9 +1,16 @@
 [tool.poetry]
 name = "scripts"
 version = "0.1.0"
+
 description = "A set of tools to automate clients code upgrade as much as possible."
-authors = ["Artem Malyshev <proofit404@gmail.com>"]
 license = "BSD-2-Clause"
+
+homepage = "https://dry-python.org/"
+repository = "https://github.com/dry-python/scripts/"
+
+authors = [
+    "Artem Malyshev <proofit404@gmail.com>",
+]
 
 packages = [
     { include = "stories_upgrade.py", from = "src" },
