@@ -220,6 +220,7 @@ def test_ini_files_indentation():
     for ini_file in [
         ".coveragerc",
         ".flake8",
+        ".vale.ini",
         "mypy.ini",
         "pytest.ini",
         "tox.ini",

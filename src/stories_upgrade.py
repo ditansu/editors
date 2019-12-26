@@ -11,6 +11,7 @@ from typing import List
 from typing import Optional
 from typing import Set
 from typing import TextIO
+from typing import Tuple
 from typing import Union
 
 import click
@@ -163,26 +164,101 @@ BRACES = {"(": ")", "[": "]", "{": "}"}
 
 
 def _split_assign(kwargs: List[Token]) -> Iterable[List[Token]]:
-    chunk = []
+    chunk: List[Token] = []
     skip_until: Optional[int] = None
     for i, token in enumerate(kwargs):
-        if skip_until is not None and i < skip_until - 1:
-            continue
-        elif skip_until is not None:
-            skip_until = None
-        elif token.src in BRACES:
-            closing = _find_closing_brace(kwargs, i, token.src)
-            chunk.extend(kwargs[i:closing])
-            skip_until = closing
-        elif token.src == ",":
+        skip_until, process = _genstate(kwargs, chunk, skip_until, token, i)
+        if process:
             yield chunk
             chunk = []
-        elif token.name == "COMMENT":
-            pass
-        else:
-            chunk.append(token)
     if not _all_whitespace(chunk):
         yield chunk
+
+
+GenState = Tuple[Optional[int], bool]
+
+
+def _genstate(
+    kwargs: List[Token],
+    chunk: List[Token],
+    skip_until: Optional[int],
+    token: Token,
+    i: int,
+) -> GenState:
+    for func in [
+        _skip_token,
+        _collect_tokens_within_braces,
+        _process_tokens,
+        _ignore_token,
+        _collect_token,
+    ]:
+        res = func(kwargs, chunk, skip_until, token, i)
+        if res is not None:
+            return res
+    else:
+        return None, False
+
+
+def _skip_token(
+    kwargs: List[Token],
+    chunk: List[Token],
+    skip_until: Optional[int],
+    token: Token,
+    i: int,
+) -> Optional[GenState]:
+    if skip_until is not None and i < skip_until:
+        mark = None if i + 1 == skip_until else skip_until
+        return mark, False
+    return None
+
+
+def _collect_tokens_within_braces(
+    kwargs: List[Token],
+    chunk: List[Token],
+    skip_until: Optional[int],
+    token: Token,
+    i: int,
+) -> Optional[GenState]:
+    if token.src in BRACES:
+        closing = _find_closing_brace(kwargs, i, token.src)
+        chunk.extend(kwargs[i:closing])
+        return closing, False
+    return None
+
+
+def _ignore_token(
+    kwargs: List[Token],
+    chunk: List[Token],
+    skip_until: Optional[int],
+    token: Token,
+    i: int,
+) -> Optional[GenState]:
+    if token.name == "COMMENT":
+        return None, False
+    return None
+
+
+def _collect_token(
+    kwargs: List[Token],
+    chunk: List[Token],
+    skip_until: Optional[int],
+    token: Token,
+    i: int,
+) -> GenState:
+    chunk.append(token)
+    return None, False
+
+
+def _process_tokens(
+    kwargs: List[Token],
+    chunk: List[Token],
+    skip_until: Optional[int],
+    token: Token,
+    i: int,
+) -> Optional[GenState]:
+    if token.src == ",":
+        return None, True
+    return None
 
 
 def _all_whitespace(tokens: List[Token]) -> bool:
