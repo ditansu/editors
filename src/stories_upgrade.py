@@ -10,7 +10,6 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Set
-from typing import TextIO
 from typing import Tuple
 from typing import Union
 
@@ -24,18 +23,25 @@ from tokenize_rt import tokens_to_src
 
 
 @click.command()
-@click.argument("files", nargs=-1, type=click.File("r"))
+@click.argument(
+    "filenames",
+    nargs=-1,
+    type=click.Path(
+        exists=True, file_okay=True, dir_okay=False, readable=True, writable=True
+    ),
+)
 @click.pass_context
-def main(ctx: click.Context, files: List[TextIO]) -> None:
+def main(ctx: click.Context, filenames: List[str]) -> None:
     """CLI entrypoint for stories upgrade tool."""
     modified = 0
-    for f in files:
-        source = f.read()
+    for filename in filenames:
+        with open(filename, "r") as f:
+            source = f.read()
         output = _upgrade(source)
         if source != output:
             modified += 1
             click.echo(f"Update {click.format_filename(f.name)}")
-            with open(f.name, "w") as f:
+            with open(filename, "w") as f:
                 f.write(output)
     if modified:
         suffix = "s" if modified > 1 else ""
