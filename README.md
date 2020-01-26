@@ -5,7 +5,7 @@ A set of tools to automate clients' code upgrade as much as possible.
 ## Installation
 
 ```bash
-pip install git+https://github.com/dry-python/scripts.git@master#egg=scripts
+pip install 'git+https://github.com/dry-python/scripts.git@master#egg=scripts[stories]'
 ```
 
 ## Stories Upgrade
