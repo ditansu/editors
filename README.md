@@ -1,4 +1,4 @@
-# Editors
+[![logo](https://raw.githubusercontent.com/dry-python/brand/master/logo/editors.png)](https://github.com/dry-python/editors)
 
 A set of tools to automate clients' code upgrade as much as possible.
 
