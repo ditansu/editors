@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "scripts"
+name = "editors"
 version = "0.1.0"
 
 description = "A set of tools to automate clients code upgrade as much as possible."
 license = "BSD-2-Clause"
 
 homepage = "https://dry-python.org/"
-repository = "https://github.com/dry-python/scripts/"
+repository = "https://github.com/dry-python/editors/"
 
 authors = [
     "Artem Malyshev <proofit404@gmail.com>",
