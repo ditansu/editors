@@ -3,13 +3,29 @@ name = "editors"
 version = "0.1.0"
 
 description = "A set of tools to automate clients code upgrade as much as possible."
+readme = "README.md"
 license = "BSD-2-Clause"
 
 homepage = "https://dry-python.org/"
 repository = "https://github.com/dry-python/editors/"
+documentation = "https://editors.readthedocs.io/"
 
 authors = [
     "Artem Malyshev <proofit404@gmail.com>",
+]
+
+keywords = [
+  "dry-python",
+  "ddd",
+  "domain driven design",
+  "refactoring",
+]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Topic :: Software Development",
 ]
 
 packages = [
