@@ -72,5 +72,5 @@ jobs:
             codecov
           fi
         env:
-          CODECOV_TOKEN: $(codecov.token)
+          CODECOV_TOKEN: 8e234fd6-9c31-43f0-b915-38e4ba9d941e
         displayName: Report Coverage.
