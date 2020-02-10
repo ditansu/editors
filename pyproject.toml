@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "editors"
-version = "0.1.0"
+version = "1.0.0"
 
 description = "A set of tools to automate clients code upgrade as much as possible."
 license = "BSD-2-Clause"
