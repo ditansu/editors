@@ -100,7 +100,6 @@ jobs:
           git remote set-branches origin master
           git fetch --quiet
           git checkout master --quiet
-          git checkout - --quiet
         displayName: Unshallow commit log.
       - script: |
           npx semantic-release
