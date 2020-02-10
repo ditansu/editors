@@ -4,6 +4,7 @@
 .mypy_cache/
 .tox/
 __pycache__/
+dist/
 htmlcov/
 node_modules/
 package-lock.json
