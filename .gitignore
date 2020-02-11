@@ -1,8 +1,10 @@
 *.pyc
 *~
 .coverage
+.idea
 .mypy_cache/
 .tox/
+/src/editors.egg-info/
 __pycache__/
 dist/
 htmlcov/
