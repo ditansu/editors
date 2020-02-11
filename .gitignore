@@ -8,3 +8,6 @@ dist/
 htmlcov/
 node_modules/
 package-lock.json
+/src/editors.egg-info/
+.idea
+
