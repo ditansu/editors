@@ -16,7 +16,7 @@ repos:
     rev: ""
     hooks:
       - id: reorder-python-imports
-        args: [--application-directories=.:src:tests/helpers]
+        args: ["--application-directories=.:src:tests/helpers"]
         # override until resolved:
         # https://github.com/asottile/reorder_python_imports/issues/103
         files: \.pyi?$
