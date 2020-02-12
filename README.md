@@ -41,19 +41,3 @@ stories-upgrade $(git ls-files '*.py')
 +        ctx.category = category
 +        return Success()
 ```
-
-For MacOS X contributors only:
-
-1. You need to install gnu-sed
-
-   ```bash
-   brew install gnu-sed
-   ```
-
-   then you have to **add\modify to your PATH like this 'PATH="/usr/local/opt/gnu-sed/libexec/gnubin:\$PATH"' from your ~/.bashrc or ~/.zshrc**
-
-2. You need to install valve linter
-
-   ```bash
-   brew install vale
-   ```
