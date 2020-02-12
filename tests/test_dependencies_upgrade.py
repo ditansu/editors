@@ -37,3 +37,43 @@ def test_main_unchanged(tmpdir):
     assert result.output == ""
 
     assert f.read() == source
+
+
+def test_main_changed(tmpdir):
+    """Main entrypoint should change files."""
+    before = dedent(
+        """
+        # ViewSets.
+        from dependencies.contrib.rest_framework import model_view_set
+         
+        @model_view_set
+        class SubscriptionsViewSet(Injector):
+            serializer_class = SubscriptionSerializer
+        """
+    )
+
+    after = dedent(
+        """
+        from stories import story, Success
+
+        class Action:
+            @story
+            def do(I):
+                I.one
+
+            def one(self, ctx):
+                ctx.foo = 1
+                return Success()
+        """
+    )
+
+    f = tmpdir.join("f.py")
+    f.write(before)
+
+    runner = CliRunner()
+
+    result = runner.invoke(main, [f.strpath])
+    assert result.exit_code == 1
+    assert result.output == f"Update {f.strpath}\n\n1 file updated\n"
+
+    assert f.read() == after
