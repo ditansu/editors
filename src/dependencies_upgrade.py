@@ -2,27 +2,23 @@
 Upgrade imports and view classes with dependencies definitions to the new version of the library API.
 
 """
-import ast
-from dataclasses import dataclass
-from dataclasses import field
-from itertools import dropwhile
-from itertools import islice
-from itertools import takewhile
-from typing import cast
-from typing import Iterable
+from typing import Dict
 from typing import List
-from typing import Optional
-from typing import Set
 from typing import Tuple
-from typing import Union
 
 import click
-from more_itertools import strip
-from tokenize_rt import Offset
-from tokenize_rt import reversed_enumerate
-from tokenize_rt import src_to_tokens
-from tokenize_rt import Token
-from tokenize_rt import tokens_to_src
+from redbaron import RedBaron
+
+
+ImportTuple = Tuple[str, str]
+MigrateImportFromDict = Dict[ImportTuple, ImportTuple]
+
+MIGRATE_IMPORT_FROM: MigrateImportFromDict = {
+    ("dependencies.contrib.rest_framework", "model_view_set"): (
+        "rest_framework.viewsets",
+        "ModelViewSet",
+    )
+}
 
 
 @click.command()
@@ -53,5 +49,24 @@ def main(ctx: click.Context, filenames: List[str]) -> None:
 
 
 def _upgrade(source: str) -> str:
-    return source
+    code = _migrate_import_from(source=source, migrate_map=MIGRATE_IMPORT_FROM)
+    return code
 
+
+def _migrate_import_from(source: str, migrate_map: MigrateImportFromDict) -> str:
+    import_idx = 0
+    module_idx = 1
+    node_name = "FromImportNode"
+    red = RedBaron(source)
+    for old, new in migrate_map.items():
+        node = red.find(
+            node_name,
+            lambda x: x.value.dumps() == old[import_idx]
+            and x.targets.dumps() == old[module_idx],
+        )
+        if node is None:
+            continue
+        node.value = new[import_idx]
+        node.targets = new[module_idx]
+
+    return red.dumps()

@@ -1,10 +1,13 @@
 """Test dependencies library upgrade script."""
+from pprint import pprint
 from textwrap import dedent
 
 import pytest
 from click.testing import CliRunner
 
+from dependencies_upgrade import _upgrade
 from dependencies_upgrade import main
+from dependencies_upgrade import MIGRATE_IMPORT_FROM
 
 
 def test_main():
@@ -20,8 +23,9 @@ def test_main_unchanged(tmpdir):
     """Main entrypoint should exit silently in no files changed."""
     source = dedent(
         """
-        from rest_framework.viewsets import ModelViewSet
- 
+        from foo.bar import baz
+        from zzz import x as g
+
         class SubscriptionsViewSet(ModelViewSet):
             serializer_class = SubscriptionSerializer
         """
@@ -44,28 +48,26 @@ def test_main_changed(tmpdir):
     before = dedent(
         """
         # ViewSets.
-        from dependencies.contrib.rest_framework import model_view_set
-         
-        @model_view_set
-        class SubscriptionsViewSet(Injector):
-            serializer_class = SubscriptionSerializer
+
+        from foo import bar
+        from {path} import {module}
+
+        class SubscriptionsViewSet:
+            pass
         """
-    )
+    ).format(path="dependencies.contrib.rest_framework", module="model_view_set")
 
     after = dedent(
         """
-        from stories import story, Success
+        # ViewSets.
 
-        class Action:
-            @story
-            def do(I):
-                I.one
+        from foo import bar
+        from {path} import {module}
 
-            def one(self, ctx):
-                ctx.foo = 1
-                return Success()
+        class SubscriptionsViewSet:
+            pass
         """
-    )
+    ).format(path="rest_framework.viewsets", module="ModelViewSet")
 
     f = tmpdir.join("f.py")
     f.write(before)
@@ -77,3 +79,39 @@ def test_main_changed(tmpdir):
     assert result.output == f"Update {f.strpath}\n\n1 file updated\n"
 
     assert f.read() == after
+
+
+@pytest.mark.parametrize("old_import, expected_import", MIGRATE_IMPORT_FROM.items())
+def test_migrate_import_from(old_import, expected_import):
+    """
+    Migrate from a contrib modules to framework native
+    """
+
+    before = dedent(
+        """
+        # ViewSets.
+
+        from foo import bar
+        from {path} import {module}
+
+        class SubscriptionsViewSet:
+            pass
+        """
+    ).format(path=old_import[0], module=old_import[1])
+
+    after = dedent(
+        """
+        # ViewSets.
+
+        from foo import bar
+        from {path} import {module}
+
+        class SubscriptionsViewSet:
+            pass
+        """
+    ).format(path=expected_import[0], module=expected_import[1])
+
+    upgraded = _upgrade(before)
+    pprint(after)
+    pprint(upgraded)
+    assert upgraded == after
