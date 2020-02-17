@@ -214,7 +214,7 @@ def test_tox_generative_environments_equal_azure_task_python_version():
         for k, v in azure_pipelines["jobs"][0]["strategy"]["matrix"].items()
         if k.startswith("py")
     }
-    for k, v in azure_tasks.items():
+    for k, v in azure_tasks.items():  # pragma: no cover
         assert k == v
 
 

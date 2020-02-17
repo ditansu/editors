@@ -202,7 +202,9 @@ def _genstate(
         if res is not None:
             return res
     else:
-        return None, False
+        # This point should not be reached.  Added to make mypy happy
+        # about return statement.
+        return None, False  # pragma: no cover
 
 
 def _skip_token(
