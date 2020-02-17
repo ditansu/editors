@@ -23,6 +23,42 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+@pytest.mark.xfail
+def test_all_pyenv_versions_in_tox_environments():  # pragma: no cover
+    """Every version from pyenv lock file should be included into Tox."""
+    tox_environments = {
+        e.split("-")[0]
+        for e in subprocess.check_output(["tox", "-l"]).decode().splitlines()
+    }
+
+    pyenv_versions = [
+        "py{}{}".format(*v.split(".")[0:2])
+        for v in open(".python-version").read().splitlines()
+    ]
+
+    for version in pyenv_versions:
+        assert version in tox_environments
+
+
+@pytest.mark.xfail
+def test_tox_environments_use_max_base_python():  # pragma: no cover
+    """Verify base Python version specified for Tox environments.
+
+    Every Tox environment with base Python version specified should
+    use max Python version.
+
+    Max Python version is assumed from the .python-versions file.
+    """
+    pyenv_version = max(
+        sorted(
+            "python{}.{}".format(*v.split(".")[0:2])
+            for v in open(".python-version").read().splitlines()
+        )
+    )
+    for _env, basepython in helpers.tox_info("basepython"):
+        assert basepython == pyenv_version
+
+
 def test_envlist_contains_all_tox_environments():
     """The envlist setting should contains all tox environments.
 
@@ -249,6 +285,41 @@ def test_build_requires_are_ordered():
         pyproject_toml = tomlkit.loads(open(pyproject_toml).read())
         requires = pyproject_toml["build-system"]["requires"]
         assert requires == sorted(requires)
+
+
+def test_flake8_exclude_patterns_are_ordered():
+    """Flake8 exclude directory patterns should be in order."""
+    ini_parser = configparser.ConfigParser()
+    ini_parser.read(".flake8")
+    exclude = [l.strip() for l in ini_parser["flake8"]["exclude"].strip().splitlines()]
+    assert exclude == sorted(exclude)
+
+
+def test_flake8_per_file_ignores_are_ordered():
+    """Flake8 per file ignores should be in order."""
+    ini_parser = configparser.ConfigParser()
+    ini_parser.read(".flake8")
+    per_file_ignores = [
+        l.strip()
+        for l in ini_parser["flake8"]["per-file-ignores"].strip().splitlines()
+        if not l.startswith("#")
+    ]
+    assert per_file_ignores == sorted(per_file_ignores)
+
+
+def test_flake8_ignored_errors_are_ordered():
+    """Flake8 ignored error codes should be in order."""
+    ini_parser = configparser.ConfigParser()
+    ini_parser.read(".flake8")
+    ignore = ini_parser["flake8"]["ignore"].strip().split(", ")
+    assert ignore == sorted(ignore)
+
+
+def test_yamllint_ignored_patterns_are_ordered():
+    """Yamllint ignored directory patterns should be in order."""
+    yamllint = yaml.safe_load(open(".yamllint").read())
+    ignore = [l.strip() for l in yamllint["ignore"].strip().splitlines()]
+    assert ignore == sorted(ignore)
 
 
 def test_pre_commit_hooks_avoid_additional_dependencies():
