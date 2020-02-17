@@ -1,4 +1,4 @@
-"""Upgrade classes with stories definitions to the new version of the library API."""
+"""Upgrade stories definitions to the new version of the library API."""
 import ast
 from dataclasses import dataclass
 from dataclasses import field
