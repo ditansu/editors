@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Upgrade stories definitions to the new version of the library API."""
 import ast
 from dataclasses import dataclass
