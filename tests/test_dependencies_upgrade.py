@@ -1,5 +1,4 @@
 """Test dependencies library upgrade script."""
-from pprint import pprint
 from textwrap import dedent
 
 import pytest
@@ -7,7 +6,8 @@ from click.testing import CliRunner
 
 from dependencies_upgrade import _upgrade
 from dependencies_upgrade import main
-from dependencies_upgrade import MIGRATE_IMPORT_FROM
+from dependencies_upgrade import MIGRATE_DRF_CLASS_INJECTOR
+from dependencies_upgrade import MIGRATE_FROM_IMPORT
 
 
 def test_main():
@@ -81,12 +81,9 @@ def test_main_changed(tmpdir):
     assert f.read() == after
 
 
-@pytest.mark.parametrize("old_import, expected_import", MIGRATE_IMPORT_FROM.items())
-def test_migrate_import_from(old_import, expected_import):
-    """
-    Migrate from a contrib modules to framework native
-    """
-
+@pytest.mark.parametrize("old_import, expected_import", MIGRATE_FROM_IMPORT.items())
+def test_migrate_from_import(old_import, expected_import):
+    """ Migrate from a contrib modules to framework native"""
     before = dedent(
         """
         # ViewSets.
@@ -112,6 +109,40 @@ def test_migrate_import_from(old_import, expected_import):
     ).format(path=expected_import[0], module=expected_import[1])
 
     upgraded = _upgrade(before)
-    pprint(after)
-    pprint(upgraded)
+    assert upgraded == after
+
+
+@pytest.mark.parametrize("decorator, view", MIGRATE_DRF_CLASS_INJECTOR.items())
+def test_migrate_drf_view_class_decorator(decorator, view):
+    """ Delete decorator and set appropriately drf class as parent"""
+    before = dedent(
+        """
+         # ViewSets.
+         from foo import bar
+
+         class TestView(ModelViewSet):
+            serializer_class = SubscriptionSerializer
+
+         @very_important_decorator
+         @{decorator}
+         class SubscriptionsViewSet(Injector):
+             serializer_class = SubscriptionSerializer2
+        """
+    ).format(decorator=decorator)
+
+    after = dedent(
+        """
+         # ViewSets.
+         from foo import bar
+
+         class TestView(ModelViewSet):
+            serializer_class = SubscriptionSerializer
+
+         @very_important_decorator
+         class SubscriptionsViewSet({view}):
+             serializer_class = SubscriptionSerializer2
+        """
+    ).format(view=view)
+
+    upgraded = _upgrade(before)
     assert upgraded == after

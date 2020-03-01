@@ -2,6 +2,7 @@
 Upgrade imports and view classes with dependencies definitions to the new version of the library API.
 
 """
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Tuple
@@ -9,16 +10,18 @@ from typing import Tuple
 import click
 from redbaron import RedBaron
 
-
 ImportTuple = Tuple[str, str]
-MigrateImportFromDict = Dict[ImportTuple, ImportTuple]
+MigrateFromImportDict = Dict[ImportTuple, ImportTuple]
 
-MIGRATE_IMPORT_FROM: MigrateImportFromDict = {
+MIGRATE_FROM_IMPORT: MigrateFromImportDict = {
     ("dependencies.contrib.rest_framework", "model_view_set"): (
         "rest_framework.viewsets",
         "ModelViewSet",
     )
 }
+
+
+MIGRATE_DRF_CLASS_INJECTOR: Dict[str, str] = dict(model_view_set="ModelViewSet")
 
 
 @click.command()
@@ -49,11 +52,14 @@ def main(ctx: click.Context, filenames: List[str]) -> None:
 
 
 def _upgrade(source: str) -> str:
-    code = _migrate_import_from(source=source, migrate_map=MIGRATE_IMPORT_FROM)
+    code = _migrate_from_import(source=source, migrate_map=MIGRATE_FROM_IMPORT)
+    code = _migrate_drf_class_injector(
+        source=code, migrate_map=MIGRATE_DRF_CLASS_INJECTOR
+    )
     return code
 
 
-def _migrate_import_from(source: str, migrate_map: MigrateImportFromDict) -> str:
+def _migrate_from_import(source: str, migrate_map: MigrateFromImportDict) -> str:
     import_idx = 0
     module_idx = 1
     node_name = "FromImportNode"
@@ -68,5 +74,30 @@ def _migrate_import_from(source: str, migrate_map: MigrateImportFromDict) -> str
             continue
         node.value = new[import_idx]
         node.targets = new[module_idx]
+
+    return red.dumps()
+
+
+def _migrate_drf_class_injector(source: str, migrate_map: Dict[str, str]) -> str:
+    node_name = "ClassNode"
+    inherit_from = "Injector"
+
+    red = RedBaron(source)
+    for old, new in migrate_map.items():
+        node = red.find(
+            node_name,
+            lambda x: x.inherit_from.dumps() == inherit_from
+            and old in x.decorators.dumps(),
+        )
+        if node is None:
+            continue
+
+        # delete decorator
+        decorator = next(dec for dec in node.decorators if dec.dumps() == f"@{old}")
+        del node.decorators[decorator.index_on_parent]
+
+        # replace injector
+        injector = next(inj for inj in node.inherit_from if inj.dumps() == inherit_from)
+        injector.value = new
 
     return red.dumps()
