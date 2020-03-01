@@ -1,4 +1,5 @@
-"""Upgrade classes with stories definitions to the new version of the library API."""
+# -*- coding: utf-8 -*-
+"""Upgrade stories definitions to the new version of the library API."""
 import ast
 from dataclasses import dataclass
 from dataclasses import field
@@ -202,7 +203,9 @@ def _genstate(
         if res is not None:
             return res
     else:
-        return None, False
+        # This point should not be reached.  Added to make mypy happy
+        # about return statement.
+        return None, False  # pragma: no cover
 
 
 def _skip_token(

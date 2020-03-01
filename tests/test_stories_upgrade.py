@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Test stories library upgrade script."""
 from textwrap import dedent
 
@@ -130,11 +131,10 @@ ASSIGNMENTS = [template.format(value) for template in TEMPLATES for value in VAL
 @pytest.mark.parametrize("returned_class", ["Success", "Skip"])
 @pytest.mark.parametrize("foo_value", ASSIGNMENTS)
 def test_migrate_ctx_assignment(returned_class, foo_value):
-    """
-    Migrate Success(foo='bar').
+    """Migrate Success(foo='bar').
 
-    Migrate story context variable assignment from the Success()
-    keyword arguments to the assignment expression.
+    Migrate story context variable assignment from the Success() keyword
+    arguments to the assignment expression.
     """
     before = dedent(
         """
@@ -172,11 +172,10 @@ def test_migrate_ctx_assignment(returned_class, foo_value):
 @pytest.mark.parametrize("foo_value", ASSIGNMENTS)
 @pytest.mark.parametrize("bar_value", ASSIGNMENTS)
 def test_migrate_ctx_multiple_assignment(returned_class, foo_value, bar_value):
-    """
-    Migrate Success(foo='bar', baz='quiz').
+    """Migrate Success(foo='bar', baz='quiz').
 
-    Migrate story context variable assignment from the Success()
-    keyword arguments to the multiline assignment expression.
+    Migrate story context variable assignment from the Success() keyword
+    arguments to the multiline assignment expression.
     """
     before = dedent(
         """
@@ -214,8 +213,7 @@ def test_migrate_ctx_multiple_assignment(returned_class, foo_value, bar_value):
 @pytest.mark.parametrize("returned_class", ["Success", "Skip"])
 @pytest.mark.parametrize("foo_value", ASSIGNMENTS)
 def test_migrate_ctx_assignment_with_indentation(returned_class, foo_value):
-    """
-    Migrate Success(foo='bar') after if False: pass.
+    """Migrate Success(foo='bar') after if False: pass.
 
     This should not crash because of dedent right before return
     statement.
@@ -262,9 +260,7 @@ def test_migrate_ctx_assignment_with_indentation(returned_class, foo_value):
 def test_migrate_ctx_assignment_multiline(returned_class, foo_value, bar_value):
     """Migrate Success(foo='bar', baz='quiz').
 
-    Where 'foo' and 'bar' have place on the different sequential
-    lines.
-
+    Where 'foo' and 'bar' have place on the different sequential lines.
     """
     before = dedent(
         """
@@ -312,7 +308,6 @@ def test_migrate_ctx_assignment_multiline_with_comment(
 
     Where 'foo' and 'bar' have place on the different sequential lines
     and there is a comment line between them.
-
     """
     before = dedent(
         """
