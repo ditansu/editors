@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Tests related to the project configuration."""
 import collections
 import configparser
@@ -23,23 +24,145 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def test_tox_environments_order():
-    """The definition of the tox environments should follow order of the envlist."""
-    tox_environments = subprocess.check_output(["tox", "-l"]).decode().splitlines()
+@pytest.mark.xfail
+def test_all_pyenv_versions_in_tox_environments():  # pragma: no cover
+    """Every version from pyenv lock file should be included into Tox."""
+    tox_environments = {
+        e.split("-")[0]
+        for e in subprocess.check_output(["tox", "-l"]).decode().splitlines()
+    }
 
-    tox_ini = open("tox.ini").read()
-
-    offsets = [
-        (tox_ini.find("testenv{}".format("" if re.match(r"py\d+", e) else ":" + e)), e)
-        for e in tox_environments
+    pyenv_versions = [
+        "py{}{}".format(*v.split(".")[0:2])
+        for v in open(".python-version").read().splitlines()
     ]
 
-    assert offsets == sorted(offsets, key=lambda key: key[0])
+    for version in pyenv_versions:
+        assert version in tox_environments
+
+
+@pytest.mark.xfail
+def test_tox_environments_use_max_base_python():  # pragma: no cover
+    """Verify base Python version specified for Tox environments.
+
+    Every Tox environment with base Python version specified should
+    use max Python version.
+
+    Max Python version is assumed from the .python-versions file.
+    """
+    pyenv_version = max(
+        sorted(
+            "python{}.{}".format(*v.split(".")[0:2])
+            for v in open(".python-version").read().splitlines()
+        )
+    )
+    for _env, basepython in helpers.tox_info("basepython"):
+        assert basepython == pyenv_version
+
+
+def test_envlist_contains_all_tox_environments():
+    """The envlist setting should contains all tox environments.
+
+    It's not allowed to have tox environments defined without having
+    them in the envlist.
+    """
+    tox_environments = set(subprocess.check_output(["tox", "-l"]).decode().splitlines())
+
+    ini_parser = configparser.ConfigParser()
+    ini_parser.read("tox.ini")
+    tox_ini = {
+        k.replace("testenv:", "") for k in ini_parser if k.startswith("testenv:")
+    }
+
+    assert not tox_ini - tox_environments
+
+
+def test_tox_generative_environments_has_common_definition():
+    """Test envlist contains python environments together with plain testenv.
+
+    The plain testenv definition is allowed only if envlist contains
+    generative environments.
+    """
+    tox_environments = {
+        "testenv"
+        for e in subprocess.check_output(["tox", "-l"]).decode().splitlines()
+        if re.match(r"\Apy\d{2}\Z", e.split("-")[0])
+    }
+
+    ini_parser = configparser.ConfigParser()
+    ini_parser.read("tox.ini")
+    tox_ini = {e for e in ini_parser if e == "testenv"}
+
+    assert tox_environments == tox_ini
+
+
+def test_coverage_include_all_packages():
+    """Coverage source should include all packages.
+
+    1. From the main pyproject.toml.
+    2. From test helpers pyproject.toml.
+    3. The tests package.
+    """
+    ini_parser = configparser.ConfigParser()
+    ini_parser.read(".coveragerc")
+    coverage_sources = ini_parser["run"]["source"].strip().splitlines()
+
+    pyproject_toml = tomlkit.loads(open("pyproject.toml").read())
+    packages = [
+        p["include"].rstrip(".py") for p in pyproject_toml["tool"]["poetry"]["packages"]
+    ]
+
+    pyproject_toml = tomlkit.loads(open("tests/helpers/pyproject.toml").read())
+    helpers = [
+        p["include"].rstrip(".py") for p in pyproject_toml["tool"]["poetry"]["packages"]
+    ]
+
+    assert coverage_sources == packages + helpers + ["tests"]
+
+
+def test_ini_files_indentation():
+    """INI files should have indentation level equals two spaces."""
+    for ini_file in [
+        ".coveragerc",
+        ".flake8",
+        ".vale.ini",
+        "mypy.ini",
+        "pytest.ini",
+        "tox.ini",
+    ]:
+        ini_text = open(ini_file).read()
+        assert not re.search(r"^ \S", ini_text, re.MULTILINE)
+        assert not re.search(r"^ {3}", ini_text, re.MULTILINE)
+
+
+def test_lock_files_not_committed():
+    """Lock files should not be committed to the git repository."""
+    git_files = subprocess.check_output(["git", "ls-files"]).decode().splitlines()
+    for lock_file in ["poetry.lock", "tests/helpers/poetry.lock", "package-lock.json"]:
+        assert lock_file not in git_files
+
+
+def test_license_year():
+    """The year in the license notes should be the current year."""
+    current_year = datetime.date.today().year
+    lines = [
+        l.split(":", 1)
+        for l in subprocess.check_output(["git", "grep", "-i", "copyright"])
+        .decode()
+        .splitlines()
+    ]
+    for _filename, line in lines:
+        found = re.findall(r"\b\d{4}\b", line)
+        if found:
+            year = int(found[-1])
+            assert year == current_year
+
+
+# Azure pipeline.
 
 
 def test_tox_environments_equal_azure_tasks():
-    """
-    Every tox environment should present in the Azure Pipeline task list.
+    """Every tox environment should present in the Azure Pipeline task list.
 
     The order should be preserved.
     """
@@ -53,12 +176,19 @@ def test_tox_environments_equal_azure_tasks():
     assert tox_environments == azure_tasks
 
 
+def test_azure_task_names_equals_tox_environments():
+    """The name of the task should equals the name of the environment."""
+    azure_pipelines = yaml.safe_load(open("azure-pipelines.yml").read())
+    for k, v in azure_pipelines["jobs"][0]["strategy"]["matrix"].items():
+        assert k == v["tox.env"]
+
+
 def test_tox_environment_base_python_equal_azure_task_python_version():
-    """
-    Python version should present in the Azure Pipeline task list.
+    """Python version should present in the Azure Pipeline task list.
 
     Python version of the Tox environment should be equal to the version
-    of the corresponding Azure Pipeline task.
+    of the corresponding Azure Pipeline task.  Python version of the
+    environment should be specified in the base python option.
     """
     azure_pipelines = yaml.safe_load(open("azure-pipelines.yml").read())
     azure_tasks = {
@@ -70,6 +200,40 @@ def test_tox_environment_base_python_equal_azure_task_python_version():
         env = re.sub(r"^testenv:", "", env)
         basepython = re.sub(r"^python", "", basepython)
         assert basepython == azure_tasks[env]
+
+
+def test_tox_generative_environments_equal_azure_task_python_version():
+    """Python version should present in the Azure Pipeline task list.
+
+    Python version of the generative Tox environment should equal to the
+    version of the corresponding Azure Pipeline task.  Python version of
+    the environment should be specified in its name.
+    """
+    azure_pipelines = yaml.safe_load(open("azure-pipelines.yml").read())
+    azure_tasks = {
+        k.split("-")[0].replace("py", ""): v["python.version"].replace(".", "")
+        for k, v in azure_pipelines["jobs"][0]["strategy"]["matrix"].items()
+        if k.startswith("py")
+    }
+    for k, v in azure_tasks.items():  # pragma: no cover
+        assert k == v
+
+
+# Definition order.
+
+
+def test_tox_environments_are_ordered():
+    """Tox environments definition should follow order of the envlist."""
+    tox_environments = subprocess.check_output(["tox", "-l"]).decode().splitlines()
+
+    tox_ini = open("tox.ini").read()
+
+    offsets = [
+        (tox_ini.find("testenv{}".format("" if re.match(r"py\d+", e) else ":" + e)), e)
+        for e in tox_environments
+    ]
+
+    assert offsets == sorted(offsets, key=lambda key: key[0])
 
 
 def test_tox_deps_are_ordered():
@@ -124,9 +288,43 @@ def test_build_requires_are_ordered():
         assert requires == sorted(requires)
 
 
+def test_flake8_exclude_patterns_are_ordered():
+    """Flake8 exclude directory patterns should be in order."""
+    ini_parser = configparser.ConfigParser()
+    ini_parser.read(".flake8")
+    exclude = [l.strip() for l in ini_parser["flake8"]["exclude"].strip().splitlines()]
+    assert exclude == sorted(exclude)
+
+
+def test_flake8_per_file_ignores_are_ordered():
+    """Flake8 per file ignores should be in order."""
+    ini_parser = configparser.ConfigParser()
+    ini_parser.read(".flake8")
+    per_file_ignores = [
+        l.strip()
+        for l in ini_parser["flake8"]["per-file-ignores"].strip().splitlines()
+        if not l.startswith("#")
+    ]
+    assert per_file_ignores == sorted(per_file_ignores)
+
+
+def test_flake8_ignored_errors_are_ordered():
+    """Flake8 ignored error codes should be in order."""
+    ini_parser = configparser.ConfigParser()
+    ini_parser.read(".flake8")
+    ignore = ini_parser["flake8"]["ignore"].strip().split(", ")
+    assert ignore == sorted(ignore)
+
+
+def test_yamllint_ignored_patterns_are_ordered():
+    """Yamllint ignored directory patterns should be in order."""
+    yamllint = yaml.safe_load(open(".yamllint").read())
+    ignore = [l.strip() for l in yamllint["ignore"].strip().splitlines()]
+    assert ignore == sorted(ignore)
+
+
 def test_pre_commit_hooks_avoid_additional_dependencies():
-    """
-    Additional dependencies of the pre-commit should not be used.
+    """Additional dependencies of the pre-commit should not be used.
 
     This is related to all hooks of all repositories.
     """
@@ -144,6 +342,9 @@ def test_pre_commit_hooks_avoid_additional_dependencies():
     assert all("additional_dependencies" not in hook for hook in hooks)
 
 
+# Version pinning.
+
+
 def test_tox_deps_not_pinned():
     """Dependencies of tox environments should not have versions."""
     for _env, deps in helpers.tox_info("deps"):
@@ -157,7 +358,7 @@ def test_tox_deps_not_pinned():
 
 
 def test_nodejs_deps_not_pinned():
-    """Development dependencies of the package.json should not have versions."""
+    """Dependencies of the package.json should not have versions."""
     package_json = json.load(open("package.json"))
     versions = list(package_json["devDependencies"].values())
     assert all(v == "*" for v in versions)
@@ -176,7 +377,7 @@ def test_poetry_deps_not_pinned():
 
 
 def test_build_requires_not_pinned():
-    """Build system requirements of pyproject.toml files should not have versions."""
+    """Build requirements of pyproject.toml files should not have versions."""
     for pyproject_toml in ["pyproject.toml", "tests/helpers/pyproject.toml"]:
         pyproject_toml = tomlkit.loads(open(pyproject_toml).read())
         requires = pyproject_toml["build-system"]["requires"]
@@ -188,65 +389,3 @@ def test_pre_commit_hooks_not_pinned():
     """Hook revisions of the pre-commit should not have versions."""
     pre_commit_config_yaml = yaml.safe_load(open(".pre-commit-config.yaml").read())
     assert all(repo["rev"] == "" for repo in pre_commit_config_yaml["repos"])
-
-
-def test_coverage_include_all_packages():
-    """
-    Coverage source should include all packages.
-
-    1. From the main pyproject.toml.
-    2. From test helpers pyproject.toml.
-    3. The tests package.
-    """
-    ini_parser = configparser.ConfigParser()
-    ini_parser.read(".coveragerc")
-    coverage_sources = ini_parser["run"]["source"].strip().splitlines()
-
-    pyproject_toml = tomlkit.loads(open("pyproject.toml").read())
-    packages = [
-        p["include"].rstrip(".py") for p in pyproject_toml["tool"]["poetry"]["packages"]
-    ]
-
-    pyproject_toml = tomlkit.loads(open("tests/helpers/pyproject.toml").read())
-    helpers = [
-        p["include"].rstrip(".py") for p in pyproject_toml["tool"]["poetry"]["packages"]
-    ]
-
-    assert coverage_sources == packages + helpers + ["tests"]
-
-
-def test_ini_files_indentation():
-    """INI files should have indentation level equals two spaces."""
-    for ini_file in [
-        ".coveragerc",
-        ".flake8",
-        ".vale.ini",
-        "mypy.ini",
-        "pytest.ini",
-        "tox.ini",
-    ]:
-        ini_text = open(ini_file).read()
-        assert not re.search(r"^   ", ini_text, re.MULTILINE)
-
-
-def test_lock_files_not_committed():
-    """Lock files should not be committed to the git repository."""
-    git_files = subprocess.check_output(["git", "ls-files"]).decode().splitlines()
-    for lock_file in ["poetry.lock", "tests/helpers/poetry.lock", "package-lock.json"]:
-        assert lock_file not in git_files
-
-
-def test_license_year():
-    """The year in the license notes should be the current year."""
-    current_year = datetime.date.today().year
-    lines = [
-        l.split(":", 1)
-        for l in subprocess.check_output(["git", "grep", "-i", "copyright"])
-        .decode()
-        .splitlines()
-    ]
-    for _filename, line in lines:
-        found = re.findall(r"\b\d{4}\b", line)
-        if found:
-            year = int(found[-1])
-            assert year == current_year
