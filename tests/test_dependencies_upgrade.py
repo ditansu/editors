@@ -9,6 +9,8 @@ from dependencies_upgrade import main
 from dependencies_upgrade import MIGRATE_DRF_CLASS_INJECTOR
 from dependencies_upgrade import MIGRATE_FROM_IMPORT
 
+pytest.importorskip("dependencies")
+
 
 def test_main():
     """Main entrypoint should return correct exit code."""

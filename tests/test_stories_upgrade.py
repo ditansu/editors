@@ -7,6 +7,8 @@ from click.testing import CliRunner
 from stories_upgrade import _upgrade
 from stories_upgrade import main
 
+pytest.importorskip("stories")
+
 
 def test_main():
     """Main entrypoint should return correct exit code."""

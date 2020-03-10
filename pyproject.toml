@@ -21,9 +21,10 @@ python = "^3.8"
 Click = { version = "*", optional = true }
 more-itertools = { version = "*", optional = true }
 tokenize-rt = { version = "*", optional = true }
+redbaron = { version = "*", optional = true }
 
 [tool.poetry.extras]
-stories = ["Click", "more-itertools", "tokenize-rt"]
+stories = ["Click", "more-itertools", "tokenize-rt", "redbaron"]
 
 [tool.poetry.scripts]
 stories-upgrade = "stories_upgrade:main"
